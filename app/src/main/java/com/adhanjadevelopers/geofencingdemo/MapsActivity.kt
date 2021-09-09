@@ -43,8 +43,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private val geofencePendingIntent: PendingIntent by lazy {
         val intent = Intent(this, GeofenceBroadcastReceiver::class.java)
-        // We use FLAG_UPDATE_CURRENT so that we get the same pending intent back when calling
-        // addGeofences() and removeGeofences().
         PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
@@ -66,26 +64,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         mapFragment.getMapAsync(this)
 
         geofenceList.add(Geofence.Builder()
-            // Set the request ID of the geofence. This is a string to identify this
-            // geofence.
             .setRequestId("entry.key")
-
-            // Set the circular region of this geofence.
-            .setCircularRegion(
-                0.616016,
-                34.521816,
-                100f
-            )
-
-            // Set the expiration duration of the geofence. This geofence gets automatically
-            // removed after this period of time.
+            .setCircularRegion( 0.616016,34.521816,100f)
             .setExpirationDuration(Geofence.NEVER_EXPIRE)
-
-            // Set the transition types of interest. Alerts are only generated for these
-            // transition. We track entry and exit transitions in this sample.
             .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
 
-            // Create the geofence.
             .build())
 
     }
@@ -109,7 +92,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         map.addMarker(MarkerOptions().position(latlng))
         map.addCircle(circleOptions)
 
-        enableMyLocation()
+        startLocation()
     }
 
     private fun isPermissionGranted(): Boolean {
@@ -118,7 +101,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         ) === PackageManager.PERMISSION_GRANTED
     }
 
-    private fun enableMyLocation() {
+    private fun startLocation() {
         if (isPermissionGranted()) {
             if (ActivityCompat.checkSelfPermission(
                     this,
@@ -178,7 +161,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun checkPermissionsAndStartGeofencing() {
-        if (foregroundAndBackgroundLocationPermissionApproved()) {
+        if (approveForegroundAndBackgroundLocation()) {
             checkDeviceLocationSettingsAndStartGeofence()
         } else {
             requestForegroundAndBackgroundLocationPermissions()
@@ -187,7 +170,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     // check if background and foreground permissions are approved
     @TargetApi(29)
-    private fun foregroundAndBackgroundLocationPermissionApproved(): Boolean {
+    private fun approveForegroundAndBackgroundLocation(): Boolean {
         val foregroundLocationApproved = (
                 PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(
                     this, Manifest.permission.ACCESS_FINE_LOCATION
@@ -206,7 +189,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     //requesting background and foreground permissions
     @TargetApi(29)
     private fun requestForegroundAndBackgroundLocationPermissions() {
-        if (foregroundAndBackgroundLocationPermissionApproved())
+        if (approveForegroundAndBackgroundLocation())
             return
         var permissionArray = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
         val resultCode = when {
@@ -237,11 +220,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         locationSettingsResponseTask.addOnFailureListener { exception ->
             if (exception is ResolvableApiException && resolve) {
-                // Location settings are not satisfied, but this can be fixed
-                // by showing the user a dialog.
                 try {
-                    // Show the dialog by calling startResolutionForResult(),
-                    // and check the result in onActivityResult().
                     exception.startResolutionForResult(
                         this,
                         REQUEST_TURN_DEVICE_LOCATION_ON
@@ -268,7 +247,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_LOCATION_PERMISSION) {
             if (grantResults.size > 0 && (grantResults[0] == PackageManager.PERMISSION_GRANTED))
-                enableMyLocation()
+                startLocation()
         }
     }
 

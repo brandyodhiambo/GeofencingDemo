@@ -21,21 +21,16 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
             return
         }
 
-        // obtaining transition type.
         val geofenceTransition = geofencingEvent.geofenceTransition
-
-        // check if the transition type is GEOFENCE_TRANSITION_ENTER
         if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
-
-            // Get the geofence that was triggered.
             val triggeringGeofences = geofencingEvent.triggeringGeofences
 
             // Obtaining transition details as a String.
-            /*val geofenceTransitionDetails = getGeofenceTransitionDetails(
-                context!!,
-                geofenceTransition,
-                triggeringGeofences
-            )*/
+             /*val geofenceTransitionDetails = getGeofenceTransitionDetails(
+                 context!!,
+                 geofenceTransition,
+                 triggeringGeofences
+             )*/
 
             // Creating and sending Notification
             val notificationManager = ContextCompat.getSystemService(
