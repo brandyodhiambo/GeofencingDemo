@@ -162,7 +162,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private fun checkPermissionsAndStartGeofencing() {
         if (approveForegroundAndBackgroundLocation()) {
-            checkDeviceLocationSettingsAndStartGeofence()
+            confirmDeviceLocationAndStartGeofencing()
         } else {
             requestForegroundAndBackgroundLocationPermissions()
         }
@@ -208,7 +208,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     }
 
-    private fun checkDeviceLocationSettingsAndStartGeofence(resolve: Boolean = true) {
+    private fun confirmDeviceLocationAndStartGeofencing(resolve: Boolean = true) {
         val locationRequest = LocationRequest.create().apply {
             priority = LocationRequest.PRIORITY_LOW_POWER
         }
@@ -253,7 +253,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        checkDeviceLocationSettingsAndStartGeofence(false)
+        confirmDeviceLocationAndStartGeofencing(false)
     }
 
     override fun onStart() {
