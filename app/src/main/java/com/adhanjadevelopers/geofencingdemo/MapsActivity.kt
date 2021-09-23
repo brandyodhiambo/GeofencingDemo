@@ -27,7 +27,7 @@ import com.google.android.gms.location.*
 import com.google.android.gms.maps.model.CircleOptions
 
 private const val TAG = "MapsActivity"
-private lateinit var geofencingClient: GeofencingClient
+private lateinit var geoClient: GeofencingClient
 private  val REQUEST_TURN_DEVICE_LOCATION_ON =20
 private val REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE = 3
 private val REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE = 4
@@ -39,9 +39,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var binding: ActivityMapsBinding
     private val geofenceList =ArrayList<Geofence>()
 
-    private val runningqorLater = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q
+    private val gadgetQ = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q
 
-    private val geofencePendingIntent: PendingIntent by lazy {
+    private val geofenceIntent: PendingIntent by lazy {
         val intent = Intent(this, GeofenceBroadcastReceiver::class.java)
         PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
@@ -55,7 +55,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         createChannel(this)
 
-        geofencingClient = LocationServices.getGeofencingClient(this)
+        geoClient = LocationServices.getGeofencingClient(this)
 
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
@@ -63,9 +63,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
+        val latitude = 0.616016
+        val longitude = 34.521816
+        val radius = 100f
+
         geofenceList.add(Geofence.Builder()
             .setRequestId("entry.key")
-            .setCircularRegion( 0.616016,34.521816,100f)
+            .setCircularRegion(latitude,longitude,radius)
             .setExpirationDuration(Geofence.NEVER_EXPIRE)
             .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
 
@@ -120,7 +124,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     //specify the geofence to monitor and the initial trigger
-    private fun getGeofencingRequest(): GeofencingRequest {
+    private fun seekGeofencing(): GeofencingRequest {
         return GeofencingRequest.Builder().apply {
             setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
             addGeofences(geofenceList)
@@ -136,7 +140,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         ) {
             return
         }
-        geofencingClient?.addGeofences(getGeofencingRequest(), geofencePendingIntent)?.run {
+        geoClient?.addGeofences(seekGeofencing(), geofenceIntent)?.run {
             addOnSuccessListener {
                 Toast.makeText(this@MapsActivity, "Geofences added", Toast.LENGTH_SHORT).show()
             }
@@ -149,7 +153,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     //removing a geofence
     private fun removeGeofence(){
-        geofencingClient?.removeGeofences(geofencePendingIntent)?.run {
+        geoClient?.removeGeofences(geofenceIntent)?.run {
             addOnSuccessListener {
                 Toast.makeText(this@MapsActivity, "Geofences removed", Toast.LENGTH_SHORT).show()
 
@@ -160,65 +164,65 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    private fun checkPermissionsAndStartGeofencing() {
-        if (approveForegroundAndBackgroundLocation()) {
-            confirmDeviceLocationAndStartGeofencing()
+    private fun examinePermisionAndinitiatGeofence() {
+        if (authorizedLocation()) {
+            validateGadgetAreaInitiateGeofence()
         } else {
-            requestForegroundAndBackgroundLocationPermissions()
+            askLocationPermission()
         }
     }
 
     // check if background and foreground permissions are approved
     @TargetApi(29)
-    private fun approveForegroundAndBackgroundLocation(): Boolean {
-        val foregroundLocationApproved = (
+    private fun authorizedLocation(): Boolean {
+        val formalizeForeground = (
                 PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(
                     this, Manifest.permission.ACCESS_FINE_LOCATION
                 ))
-        val backgroundPermissionApproved =
-            if (runningqorLater) {
+        val formalizeBackground =
+            if (gadgetQ) {
                 PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(
                     this, Manifest.permission.ACCESS_BACKGROUND_LOCATION
                 )
             } else {
                 true
             }
-        return foregroundLocationApproved && backgroundPermissionApproved
+        return formalizeForeground && formalizeBackground
     }
 
     //requesting background and foreground permissions
     @TargetApi(29)
-    private fun requestForegroundAndBackgroundLocationPermissions() {
-        if (approveForegroundAndBackgroundLocation())
+    private fun askLocationPermission() {
+        if (authorizedLocation())
             return
-        var permissionArray = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
-        val resultCode = when {
-            runningqorLater -> {
-                permissionArray += Manifest.permission.ACCESS_BACKGROUND_LOCATION
+        var grantingPermission = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+        val customResult = when {
+            gadgetQ -> {
+                grantingPermission += Manifest.permission.ACCESS_BACKGROUND_LOCATION
                 REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE
             }
             else -> REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE
         }
-        Log.d(TAG, "requestForegroundAndBackgroundLocationPermissions: ")
+        Log.d(TAG, "askLocationPermission: ")
         ActivityCompat.requestPermissions(
             this,
-            permissionArray,
-            resultCode
+            grantingPermission,
+            customResult
         )
 
     }
 
-    private fun confirmDeviceLocationAndStartGeofencing(resolve: Boolean = true) {
+    private fun validateGadgetAreaInitiateGeofence(resolve: Boolean = true) {
         val locationRequest = LocationRequest.create().apply {
             priority = LocationRequest.PRIORITY_LOW_POWER
         }
         val builder = LocationSettingsRequest.Builder().addLocationRequest(locationRequest)
 
-        val settingsClient = LocationServices.getSettingsClient(this)
-        val locationSettingsResponseTask =
-            settingsClient.checkLocationSettings(builder.build())
+        val client = LocationServices.getSettingsClient(this)
+        val locationResponses =
+            client.checkLocationSettings(builder.build())
 
-        locationSettingsResponseTask.addOnFailureListener { exception ->
+        locationResponses.addOnFailureListener { exception ->
             if (exception is ResolvableApiException && resolve) {
                 try {
                     exception.startResolutionForResult(
@@ -232,7 +236,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 Toast.makeText(this, "Enable your location", Toast.LENGTH_SHORT).show()
             }
         }
-        locationSettingsResponseTask.addOnCompleteListener {
+        locationResponses.addOnCompleteListener {
             if (it.isSuccessful) {
                 addGeofence()
             }
@@ -253,12 +257,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        confirmDeviceLocationAndStartGeofencing(false)
+        validateGadgetAreaInitiateGeofence(false)
     }
 
     override fun onStart() {
         super.onStart()
-        checkPermissionsAndStartGeofencing()
+        examinePermisionAndinitiatGeofence()
     }
 
     override fun onDestroy() {
